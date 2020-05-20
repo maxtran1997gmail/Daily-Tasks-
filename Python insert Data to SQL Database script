@@ -1,0 +1,70 @@
+# NOTE 1  : This is just a general script of the task which is run manually , you should automate it based on your desired refresh period  
+# NOTE 2 : These steps are for inserting new data to database only, you have to get the new data whether from APIs / or from other sources such as MongoDB 
+or Spark / Hadoop / etc and Preprocessing them so that they can fit your Dataframe in the destination Database. Those Preprocessing steps should be put prior
+to these steps above 
+   
+
+-- install required library for task -- 
+
+import pyodbc
+import pandas as pd
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
+
+-- declare login information -- 
+
+server = 'Put your server address here' 
+database = 'Put your database name here' 
+user = 'Put your username here' 
+password = 'Put your password here' 
+#connection = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
+#cursor = connection.cursor()
+
+-- Connect to Database FUNCTION -- 
+def connect_database(server_name, database_name, user_name, password):
+    driver = '{ODBC Driver 17 for SQL Server}'
+    connection = pyodbc.connect(
+        'DRIVER=' + driver +
+        ';SERVER=' + server_name +
+        ';PORT=1433;DATABASE=' + database_name +
+        ';UID=' + user_name +
+        ';PWD=' + password)
+    print('Database Connected')
+    return connection
+
+-- Inserting data to database  FUNCTION -- 
+def update_table(table_name, data_frame, connection):
+    #data_frame = data_frame.reset_index()
+    # get column names 
+    cols = ('[' + "],[".join([str(i) for i in data_frame.columns.tolist()]) + ']').strip("'")
+    # insert values according to column names 
+    for _, row in data_frame.iterrows():
+        insertion_query = "INSERT INTO " + table_name + " (" + cols + ") VALUES (" + "?,"*(len(row)-1) + "?)"
+        connection.cursor().execute(insertion_query, tuple(row))
+        connection.commit()
+
+----------------------------- Example ----------------------------------
+#Connection to Database 
+connection = connect_database(server,database,user,password)
+#Retrieve Data from SQL Querry
+querry = """select * from TABLENAME"""
+df = pd.read_sql_query(querry, connection) 
+df 
+
+#Delacre destination and object to insert data 
+table_name = 'Your destination TABLENAME'    
+data_frame = 'Your Insert Dataframe
+
+#Insert new data to table in Database' 
+connection = connect_database(server,database,user,password)
+update = update_table(table_name,data_frame,connection)
+
+# Checking whether new data is inserted 
+connection = connect_database(server,database,user,password)
+querry = """select * from TABLENAME"""
+df = pd.read_sql_query(querry, connection) 
+df 
+
+
+
+    
